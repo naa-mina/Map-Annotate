@@ -65,6 +65,25 @@ const DrawingHandler: React.FC<{
   const currentPath = useRef<L.LatLng[]>([]);
   const tempLayer = useRef<L.Layer | null>(null);
   const [, setRerender] = useState(false); // trigger UI updates
+  const updateTempShape = () => {
+    if (tempLayer.current) {
+      map.removeLayer(tempLayer.current);
+      tempLayer.current = null;
+    }
+    if (currentPath.current.length > 1) {
+      const shape = drawingMode === 'line'
+        ? L.polyline(currentPath.current, { color: '#3b82f6', weight: 3 })
+        : L.polygon(currentPath.current, { color: '#3b82f6', weight: 3, fillOpacity: 0.2 });
+      tempLayer.current = shape;
+      map.addLayer(shape);
+    }
+  };
+  const removeTempLayer = () => {
+    if (tempLayer.current) {
+      map.removeLayer(tempLayer.current);
+      tempLayer.current = null;
+    }
+  };
 
   // Add points
   useMapEvents({
@@ -117,6 +136,32 @@ const DrawingHandler: React.FC<{
       }
     };
   }, [drawingMode]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isDrawing.current) return;
+
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        e.preventDefault();
+        if (currentPath.current.length > 0) {
+          currentPath.current.pop(); // remove last point
+          updateTempShape();
+        }
+      }
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        currentPath.current = [];
+        isDrawing.current = false;
+        removeTempLayer();
+        setRerender(r => !r);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
 
   useEffect(() => {
     map.doubleClickZoom.disable();
