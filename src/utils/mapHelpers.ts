@@ -105,7 +105,7 @@ export const exportLayerGeoJSON = (layer: LayerData) => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${layer.name}.geojson`;
+  a.download = `${layer.name}.json`;
   a.click();
   URL.revokeObjectURL(url);
 };
