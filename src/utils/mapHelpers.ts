@@ -37,6 +37,17 @@ export const createEmptyFeatureCollection = (): FeatureCollection => ({
   features: []
 });
 
+export const closePolygonCoordinates = (coords: number[][][]): number[][][] => {
+  return coords.map(ring => {
+    const first = ring[0];
+    const last = ring[ring.length - 1];
+    if (first[0] !== last[0] || first[1] !== last[1]) {
+      return [...ring, first]; // ✅ closes the ring
+    }
+    return ring;
+  });
+};
+
 export const getFeatureStyle = (properties: FeatureProperties) => {
   const validated = properties?.validated;
   let color = '#c72e28ff'; // red-500
@@ -66,7 +77,7 @@ export const exportGeoJSON = (layers: LayerData[], filename: string = 'layers') 
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${filename}.geojson`;
+  a.download = `${filename}.json`;
   a.click();
   URL.revokeObjectURL(url);
 };
@@ -77,6 +88,12 @@ export const exportLayerGeoJSON = (layer: LayerData) => {
     ...layer.features,
     features: layer.features.features.map(f => ({
     ...f,
+    geometry: f.geometry.type === 'Polygon'
+      ? {
+          ...f.geometry,
+          coordinates: closePolygonCoordinates(f.geometry.coordinates as number[][][])
+        }
+      : f.geometry,
     properties: sanitizeProperties(f.properties || {})
     }))
   };
