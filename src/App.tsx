@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { MapContainer } from './components/MapContainer';
 import { Sidebar } from './components/Sidebar';
 import { MapControls } from './components/MapControls';
@@ -21,6 +21,9 @@ function App() {
   const [selectedFeatureId, setSelectedFeatureId] = useState<string | null>(null);
   const zoomToFeatureRef = useRef<(feature: Feature) => void>();
   const [layers, setLayers] = useLocalStorage<LayerData[]>('geojson-layers', []);
+  useEffect(() => {
+    setLayers(prev => prev.filter(layer => layer.id !== 'permanent'));
+  }, []);
   const [settings, setSettings] = useLocalStorage<MapSettings>('map-settings', defaultSettings);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeLayer, setActiveLayer] = useState<string | null>(null);
@@ -98,10 +101,18 @@ function App() {
         const [lng, lat] = feature.geometry.coordinates;
         bounds.extend([lat, lng]);
       } else if (feature.geometry.type === 'LineString') {
-        feature.geometry.coordinates.forEach(coord => bounds.extend([coord[1], coord[0]]));
-      } else if (feature.geometry.type === 'Polygon') {
-        feature.geometry.coordinates[0].forEach(coord => bounds.extend([coord[1], coord[0]]));
+        feature.geometry.coordinates.forEach(([lng, lat]) => {
+          bounds.extend([lat,long]);
+        });
+      } else if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
+        const coords = feature.geometry.type === 'Polygon'
+          ? feature.geometry.coordinates
+          : feature.geometry.coordinates.flat();
+        coords[0].forEach(([lng, lat]) => {
+          bounds.extend([lat,lng])
+        });
       }
+
     });
 
     if (bounds.isValid() && zoomToFeatureRef.current) {
@@ -216,6 +227,27 @@ function App() {
     );
   };
 
+  useEffect(() => {
+    fetch('/New_weatherford_3nm.geojson')
+      .then((res) => res.json())
+      .then((geojson: FeatureCollection) => {
+        const permanentLayer: LayerData = {
+          id: 'permanent',
+          name: 'Weatherford Map area',
+          visible: true,
+          features: geojson
+        };
+        setLayers(prev => {
+          const alreadyExists = prev.some(l => l.id === 'permanent');
+          return alreadyExists ? prev : [permanentLayer, ...prev];
+
+        });
+      })
+      .catch((err) => {
+        console.error('Failed to load permanent layer:', err);
+      });
+    }, []);
+
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
@@ -253,6 +285,12 @@ function App() {
         onZoomToCoordinates={(lat, lng) => {
           coordinateZoomRef.current?.(lat, lng);
         }}
+        onZoomToFeature={(feature) => {
+          if (zoomToFeatureRef.current) {
+            zoomToFeatureRef.current(feature);
+          }
+        }}
+
       />
 
       <MapControls

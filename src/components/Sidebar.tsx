@@ -26,6 +26,7 @@ interface SidebarProps {
     properties: any;
   }) => void;
   onZoomToCoordinates: (lat: number, lng: number) => void;
+  onZoomToFeature: (feature: Feature) => void;
 
 
 
@@ -49,7 +50,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onFeatureEdit,
   onSelectFeature,
   onFeatureDelete,
-  onZoomToCoordinates
+  onZoomToCoordinates,
+  onZoomToFeature
+  
 }) => {
   const [expandedLayers, setExpandedLayers] = useState<Record<string, boolean>>({});
   const toggleLayerExpanded = (layerId: string) => {
@@ -81,7 +84,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const lng = parseFloat(lngInput);
 
     if (!isNaN(lat) && !isNaN(lng)) {
-      onZoomToCoordinates(lat, lng); // ✅ This will call the map to zoom
+      onZoomToCoordinates(lat, lng);
     } else {
       alert('Please enter valid coordinates');
     }
@@ -289,13 +292,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   )}
                 </button>
               </div>
-
+            
               <div className="flex gap-1">
                 <button
                   onClick={() => onSetActiveLayer(layer.id)}
-                  className={`flex-1 px-2 py-1 text-xs rounded transition-colors ${
-                    activeLayer === layer.id
-                      ? 'bg-blue-600 text-white'
+                  disabled={layer.id === 'permanent'}
+                  className={`px-2 py-1 text-xs rounded ${
+                    layer.id === 'permanent'
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
                 >
@@ -313,14 +317,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 >
                   <Download className="w-3 h-3" />
                 </button>
+              {layer.id !== 'permanent' && (
                 <button
                   onClick={() => onLayerRemove(layer.id)}
                   className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
+              )}
               </div>
-              
+             
               <div className="mt-2 text-xs text-gray-500">
                 {layer.features.features.length} features
               </div>
@@ -346,10 +352,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             featureId: feature.properties?.id,
                             properties: feature.properties
                           });
+                          onZoomToFeature({
+                            type: 'Feature',
+                            geometry: feature.geometry,
+                            properties: feature.properties
+                          });
                         }}
                       >
-                        • {feature.properties?.name || 'Unnamed'} ({feature.geometry.type})
+                        <span className="text-sm text-gray-800">
+                          {layer.id === 'permanent'
+                            ? `ID: ${feature.properties?.id ?? '—'} (${feature.geometry.type})`
+                            : `${feature.properties?.name || 'Unnamed'} (${feature.geometry.type})`}
+                        </span>
                       </span>
+                    {layer.id !== 'permanent' && (
                       <button
                         onClick={() => onFeatureDelete(layer.id, feature.properties?.id)}
                         className="ml-2 text-red-500 hover:text-red-700"
@@ -357,6 +373,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       >
                         🗑️
                       </button>
+                    )}
                     </li>
                   ))}
                 </ul>

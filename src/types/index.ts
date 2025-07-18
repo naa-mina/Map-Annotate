@@ -24,7 +24,7 @@ export interface EditingFeature {
 }
 
 export interface MapSettings {
-  baseLayer: 'nearmap' | 'osm';
+  baseLayer: 'nearmap' | 'osm' | 'esri';
   showAnnotations: boolean;
   center: [number, number];
   zoom: number;

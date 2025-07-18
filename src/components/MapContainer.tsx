@@ -352,10 +352,19 @@ console.log("🟦 Selected feature ID in MapContainer:", selectedFeatureId);
       style={{ height: '100vh' }}
     >
       <TileLayer
-        url={settings.baseLayer === 'nearmap' ? nearmapUrl : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'}
+        url={
+          settings.baseLayer === 'nearmap' 
+            ? nearmapUrl 
+            : settings.baseLayer === 'esri'
+              ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+              : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+        }
         attribution={settings.baseLayer === 'nearmap' 
-          ? '&copy; Nearmap / Zipline WMTS' 
-          : '&copy; OpenStreetMap contributors'}
+          ? '&copy; Nearmap / Zipline WMTS'
+          :settings.baseLayer === 'esri'
+          ? '&copy; Esri, Maxar, Earthstar Geographics'
+          : '&copy; OpenStreetMap contributors'
+        }
         tileSize={settings.baseLayer === 'nearmap' ? 256 : 256}
         minZoom={settings.baseLayer === 'nearmap' ? 1 : 0}
         maxZoom={settings.baseLayer === 'nearmap' ? 22 : 18}

@@ -41,12 +41,13 @@ export const MapControls: React.FC<MapControlsProps> = ({
             value={settings.baseLayer}
             onChange={(e) => onSettingsChange({
               ...settings,
-              baseLayer: e.target.value as 'nearmap' | 'osm'
+              baseLayer: e.target.value as 'nearmap' | 'osm' | 'esri'
             })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="nearmap">Nearmap</option>
             <option value="osm">OpenStreetMap</option>
+            <option value="esri">Esri Satellite</option>
           </select>
         </div>
 
