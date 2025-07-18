@@ -26,6 +26,7 @@ function App() {
   const [activeLayer, setActiveLayer] = useState<string | null>(null);
   const [drawingMode, setDrawingMode] = useState<'point' | 'line' | 'polygon' | null>(null);
   const [editingFeature, setEditingFeature] = useState<EditingFeature | null>(null);
+  const coordinateZoomRef = useRef<(lat: number, lng: number) => void>();
 
   const handleCreateLayer = () => {
     const name = prompt('Enter layer name:');
@@ -122,13 +123,41 @@ function App() {
       zoomToFeatureRef.current(dummyFeature);
     }
   };
+  const [latInput, setLatInput] = useState('');
+  const [lngInput, setLngInput] = useState('');
+  const handleZoomToCoord = () => {
+    const lat = parseFloat(latInput);
+    const lng = parseFloat(lngInput);
 
+    if (!isNaN(lat) && !isNaN(lng) && coordinateZoomRef.current) {
+      coordinateZoomRef.current(lat, lng);
+    }
+  };
 
   const handleFeatureCreate = (feature: Feature, layerId: string) => {
+    const props = feature.properties || {};
+    const cleanedProperties = {
+      ...props,
+      id: Array.isArray(props.id) ? props.id[0] : props.id,
+      name: Array.isArray(props.name) ? props.name[0] : props.name,
+      validated: props.validated ?? '1'
+    };
+    
+    const cleanedFeature: Feature = {
+      ...feature,
+      properties: cleanedProperties
+    };
     setLayers(prev => prev.map(layer => {
       if (layer.id === layerId) {
-        return { ...layer, features: { ...layer.features, features: [...layer.features.features, feature] } };
+        return { 
+          ...layer, 
+          features: { 
+            ...layer.features, 
+            features: [...layer.features.features, cleanedFeature]
+          }
+        };
       }
+
       return layer;
     }));
 
@@ -197,6 +226,7 @@ function App() {
         onLayerBoundsRequest={handleLayerZoom}
         onZoomToFeature={(fn) => { zoomToFeatureRef.current = fn; }}
         selectedFeatureId={selectedFeatureId}
+        onZoomToCoordinates={(fn) => { coordinateZoomRef.current = fn; }}
       />
 
       <Sidebar
@@ -216,6 +246,9 @@ function App() {
         onCancelEdit={() => setEditingFeature(null)}
         onSelectFeature={setSelectedFeatureId}
         onFeatureDelete={handleFeatureDelete}
+        onZoomToCoordinates={(lat, lng) => {
+          coordinateZoomRef.current?.(lat, lng);
+        }}
       />
 
       <MapControls

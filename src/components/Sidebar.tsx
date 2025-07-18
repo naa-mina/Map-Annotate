@@ -25,7 +25,7 @@ interface SidebarProps {
     featureId: string;
     properties: any;
   }) => void;
-
+  onZoomToCoordinates: (lat: number, lng: number) => void;
 
 
 
@@ -48,7 +48,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCancelEdit,
   onFeatureEdit,
   onSelectFeature,
-  onFeatureDelete
+  onFeatureDelete,
+  onZoomToCoordinates
 }) => {
   const [expandedLayers, setExpandedLayers] = useState<Record<string, boolean>>({});
   const toggleLayerExpanded = (layerId: string) => {
@@ -73,6 +74,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
       event.target.value = ''; // Reset input
     }
   };
+  const [latInput, setLatInput] = useState('');
+  const [lngInput, setLngInput] = useState('');
+  const handleZoomToCoord = () => {
+    const lat = parseFloat(latInput);
+    const lng = parseFloat(lngInput);
+
+    if (!isNaN(lat) && !isNaN(lng)) {
+      onZoomToCoordinates(lat, lng); // ✅ This will call the map to zoom
+    } else {
+      alert('Please enter valid coordinates');
+    }
+  };
+
 
   const handleSaveFeature = () => {
     onSaveFeature(editingProperties);
@@ -184,6 +198,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className="hidden"
             />
           </label>
+        </div>
+
+        <div className="mt-4 p-3 border-t border-gray-200">
+          <h3 className="text-sm font-semibold mb-2">Zoom to Coordinates</h3>
+          <div className="flex gap-2 mb-2">
+            <input
+              type="number"
+              value={latInput}
+              onChange={(e) => setLatInput(e.target.value)}
+              placeholder="Latitude"
+              className="flex-1 px-2 py-1 border rounded text-sm"
+            />
+            <input
+              type="number"
+              value={lngInput}
+              onChange={(e) => setLngInput(e.target.value)}
+              placeholder="Longitude"
+              className="flex-1 px-2 py-1 border rounded text-sm"
+            />
+          </div>
+          <button
+            onClick={handleZoomToCoord}
+            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 text-sm"
+          >
+            Zoom
+          </button>
         </div>
 
         <div className="space-y-2">

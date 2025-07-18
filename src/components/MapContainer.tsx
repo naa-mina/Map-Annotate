@@ -29,9 +29,30 @@ interface MapContainerProps {
   onLayerBoundsRequest: (layerId: string) => LatLngBounds | null;
   onZoomToFeature: (fn: (feature: Feature) => void) => void; 
   selectedFeatureId: string | null;
+  onZoomToCoordinates: (fn: (lat: number, lng: number) => void) => void;
 
 }
 
+const CopyCoordinatesOnClick = () => {
+  useMapEvents({
+    click: (e) => {
+      const lat = e.latlng.lat.toFixed(6);
+      const lng = e.latlng.lng.toFixed(6);
+      const coordString = `${lat}, ${lng}`;
+
+      navigator.clipboard.writeText(coordString)
+        .then(() => {
+          console.log(`📋 Clicked map: ${coordString}`);
+          // You can also use toast.success(...) here
+        })
+        .catch((err) => {
+          console.error('❌ Failed to copy coordinates:', err);
+        });
+    }
+  });
+
+  return null;
+};
 
 
 const DrawingHandler: React.FC<{
@@ -169,7 +190,8 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   onFeatureEdit,
   onLayerBoundsRequest,
   onZoomToFeature,
-  selectedFeatureId //
+  selectedFeatureId,
+  onZoomToCoordinates
 }) => {
 console.log("🟦 Selected feature ID in MapContainer:", selectedFeatureId);
 
@@ -181,7 +203,14 @@ console.log("🟦 Selected feature ID in MapContainer:", selectedFeatureId);
     if (!mapRef.current) return;
 
     const map = mapRef.current;
-
+    
+    onZoomToCoordinates((lat: number, lng: number) => {
+      map.setView([lat, lng], 18); 
+    }); 
+  }, [onZoomToCoordinates]);
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
     onZoomToFeature((feature: Feature) => {
       const bounds = L.geoJSON(feature).getBounds();
       if (bounds.isValid()) {
@@ -285,8 +314,9 @@ console.log("🟦 Selected feature ID in MapContainer:", selectedFeatureId);
         tileSize={settings.baseLayer === 'nearmap' ? 256 : 256}
         minZoom={settings.baseLayer === 'nearmap' ? 1 : 0}
         maxZoom={settings.baseLayer === 'nearmap' ? 22 : 18}
-      />
       
+      />
+      <CopyCoordinatesOnClick /> 
       <FeatureGroup ref={featureGroupRef}>
         <EditControl
           position="topright"
@@ -331,6 +361,19 @@ console.log("🟦 Selected feature ID in MapContainer:", selectedFeatureId);
 
               onEachFeature={(feature, leafletLayer) => {
                 leafletLayer.on('click', () => {
+                  if (feature?.geometry?.type === 'Point') {
+                    const [lng, lat] = feature.geometry.coordinates;
+                    const coordString = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                    navigator.clipboard.writeText(coordString)
+                      .then(() => {
+                        console.log(`Copied coordinates: ${coordString}`);
+                      })
+                      .catch(err => {
+                        console.error("Failed to copy", err);
+
+                      });
+                    
+                  }  
                   if (feature?.properties?.id && activeLayer) {
                     onFeatureEdit({
                       layerId: activeLayer,
