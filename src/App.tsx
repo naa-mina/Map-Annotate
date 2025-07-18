@@ -137,10 +137,14 @@ function App() {
   const handleFeatureCreate = (feature: Feature, layerId: string) => {
     const props = feature.properties || {};
     const cleanedProperties = {
-      ...props,
+    
+      
       id: Array.isArray(props.id) ? props.id[0] : props.id,
       name: Array.isArray(props.name) ? props.name[0] : props.name,
-      validated: props.validated ?? '1'
+      validated: Array.isArray(props.validated)
+       ? props.validated[0]
+       : props.validated ?? '1',
+      ...props
     };
     
     const cleanedFeature: Feature = {
