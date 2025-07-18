@@ -1,6 +1,33 @@
 import { FeatureCollection, Feature, Geometry } from 'geojson';
 import { LayerData, FeatureProperties } from '../types';
 
+export const sanitizeProperties = (
+  props: Record<string, any>
+): Record<string, string | number | boolean | null> => {
+  const cleaned: Record<string, string | number | boolean | null> = {};
+
+  Object.entries(props || {}).forEach(([key, value]) => {
+    if (
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean' ||
+      value === null
+    ) {
+      cleaned[key] = value;
+    } else if (Array.isArray(value)) {
+      cleaned[key] = typeof value[0] === 'string' || typeof value[0] === 'number'
+        ? value[0]
+        : String(value[0]);
+    } else {
+      cleaned[key] = String(value);
+    }
+  });
+
+  return cleaned;
+};
+
+
+
 export const generateId = (): string => {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 };
@@ -29,7 +56,10 @@ export const exportGeoJSON = (layers: LayerData[], filename: string = 'layers') 
   const allFeatures = layers.flatMap(layer => layer.features.features);
   const collection: FeatureCollection = {
     type: 'FeatureCollection',
-    features: allFeatures
+    features: allFeatures.map(f => ({
+      ...f,
+      properties: sanitizeProperties(f.properties || {})
+    })) 
   };
   
   const blob = new Blob([JSON.stringify(collection, null, 2)], { type: 'application/json' });
@@ -42,7 +72,19 @@ export const exportGeoJSON = (layers: LayerData[], filename: string = 'layers') 
 };
 
 export const exportLayerGeoJSON = (layer: LayerData) => {
-  const blob = new Blob([JSON.stringify(layer.features, null, 2)], { type: 'application/json' });
+  
+  const cleanedFeatures: FeatureCollection = {
+    ...layer.features,
+    features: layer.features.features.map(f => ({
+    ...f,
+    properties: sanitizeProperties(f.properties || {})
+    }))
+  };
+
+  const blob = new Blob([JSON.stringify(cleanedFeatures, null, 2)], {
+    type: 'application/json'
+  });
+
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
